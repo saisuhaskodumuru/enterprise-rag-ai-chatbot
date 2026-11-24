@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enterprise RAG AI Chatbot</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f4f6f8; color: #1a1a1a; }
+  header { background: #0b3d66; color: #fff; padding: 18px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; opacity: .85; font-size: 14px; }
+  main { max-width: 860px; margin: 0 auto; padding: 20px; }
+  #stats { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 14px; }
+  #chat { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; min-height: 260px; }
+  .msg { margin: 0 0 16px; }
+  .msg .who { font-weight: 700; font-size: 13px; color: #0b3d66; }
+  .msg .text { margin-top: 4px; line-height: 1.5; white-space: pre-wrap; }
+  .sources { margin-top: 8px; font-size: 13px; }
+  .sources summary { cursor: pointer; color: #0b3d66; }
+  .source { border-left: 3px solid #0b3d66; padding: 6px 10px; margin: 8px 0; background: #f4f6f8; }
+  .source .meta { font-weight: 700; }
+  .model { font-size: 12px; color: #666; margin-top: 4px; }
+  form { display: flex; gap: 8px; margin-top: 16px; }
+  input[type=text] { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  button { padding: 10px 18px; font-size: 15px; background: #0b3d66; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
+  .examples { margin-top: 12px; font-size: 13px; color: #555; }
+  .examples button { background: #e8eef2; color: #0b3d66; padding: 4px 10px; font-size: 13px; margin: 2px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Enterprise RAG AI Chatbot</h1>
+  <p>Document-aware customer support — LangChain chunking, FAISS retrieval, Azure OpenAI GPT-4 when configured, local extractive answers otherwise.</p>
+</header>
+<main>
+  <div id="stats">Loading stats…</div>
+  <div id="chat"></div>
+  <form id="ask-form">
+    <input type="text" id="question" placeholder="Ask about billing, orders, returns, your account…" autocomplete="off" minlength="3" required>
+    <button type="submit" id="send">Ask</button>
+  </form>
+  <div class="examples">Try:
+    <button type="button" data-q="How do I change my payment method?">How do I change my payment method?</button>
+    <button type="button" data-q="How long do refunds take?">How long do refunds take?</button>
+    <button type="button" data-q="How do I reset my password?">How do I reset my password?</button>
+    <button type="button" data-q="How long does standard shipping take?">How long does standard shipping take?</button>
+  </div>
+</main>
+<script>
+const chat = document.getElementById('chat');
+const statsEl = document.getElementById('stats');
+const form = document.getElementById('ask-form');
+const input = document.getElementById('question');
+const sendBtn = document.getElementById('send');
+
+async function loadStats() {
+  const r = await fetch('/api/v1/stats');
+  const s = await r.json();
+  statsEl.textContent = s.documents + ' documents · ' + s.chunks + ' chunks · embeddings: ' + s.embedding_model + ' · vector store: ' + s.vector_store + ' · generation: ' + s.generation_model;
+}
+loadStats();
+
+function addMsg(who, text, model, sources, latency) {
+  const div = document.createElement('div');
+  div.className = 'msg';
+  const whoEl = document.createElement('div');
+  whoEl.className = 'who';
+  whoEl.textContent = who;
+  const textEl = document.createElement('div');
+  textEl.className = 'text';
+  textEl.textContent = text;
+  div.appendChild(whoEl);
+  div.appendChild(textEl);
+  if (model) {
+    const m = document.createElement('div');
+    m.className = 'model';
+    m.textContent = 'model: ' + model + (latency != null ? ' · ' + latency + ' ms' : '');
+    div.appendChild(m);
+  }
+  if (sources && sources.length) {
+    const det = document.createElement('details');
+    det.className = 'sources';
+    const sum = document.createElement('summary');
+    sum.textContent = 'Sources (' + sources.length + ')';
+    det.appendChild(sum);
+    sources.forEach(function (s) {
+      const sEl = document.createElement('div');
+      sEl.className = 'source';
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = s.title + ' — ' + s.doc_id + ' (score ' + s.score + ')';
+      const body = document.createElement('div');
+      body.textContent = s.text;
+      sEl.appendChild(meta);
+      sEl.appendChild(body);
+      det.appendChild(sEl);
+    });
+    div.appendChild(det);
+  }
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function ask(q) {
+  addMsg('You', q);
+  sendBtn.disabled = true;
+  try {
+    const r = await fetch('/api/v1/chat/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      addMsg('Assistant', 'Error: ' + (data.detail || r.status));
+    } else {
+      addMsg('Assistant', data.answer, data.model, data.sources, data.latency_ms);
+    }
+  } catch (e) {
+    addMsg('Assistant', 'Could not reach the server: ' + e.message);
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+form.addEventListener('submit', function (e) {
+  e.preventDefault();
+  const q = input.value.trim();
+  if (q.length < 3) return;
+  input.value = '';
+  ask(q);
+});
+document.querySelectorAll('.examples button').forEach(function (b) {
+  b.addEventListener('click', function () { ask(b.dataset.q); });
+});
+addMsg('Assistant', 'Hello — I answer from the seeded support documents. Ask me about billing, your account, orders, returns, device setup, warranty, plans, or account security.');
+</script>
+</body>
+</html>
