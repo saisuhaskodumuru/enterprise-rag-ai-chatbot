@@ -3,9 +3,10 @@
 A real working demo of a document-aware customer-support chatbot. Ask a
 question in plain English and it retrieves the relevant support
 documents and answers from them, with the sources cited.
-It is a demo rebuild of the RAG chatbot work Sai Suhas Kodumuru did at
-Verizon. It is not Verizon production code, and it contains no real
-customer data. Every document in it is synthetic.
+It is a personal project built by Sai Suhas Kodumuru to demonstrate
+document-aware customer support with LangChain, RAG, and Azure OpenAI
+(GPT-4). It is not associated with any work experience, and it contains
+no real customer data. Every document in it is synthetic.
 
 ## What it does
 
@@ -145,9 +146,9 @@ extractive generator and the response says
 `"model": "local-extractive-v1"`. The API key is sent only as a header
 to the configured endpoint and is never logged.
 
-In the Verizon work this pattern was the same: LangChain RAG
-pipelines retrieved from a FAISS index and Azure OpenAI GPT-4
-generated the answer, with the retrieved chunks kept as citations.
+This project follows a common production pattern: LangChain RAG
+pipelines retrieve from a FAISS index and Azure OpenAI GPT-4
+generates the answer, with the retrieved chunks kept as citations.
 This demo keeps that shape, with a local TF-IDF embedding and an
 extractive generator standing in for the cloud services when no
 endpoint is present.

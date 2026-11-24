@@ -2,9 +2,10 @@
 
 ## What this is
 
-This is a demo rebuild of RAG chatbot work I did at Verizon, built as
-a standalone portfolio project. It is not Verizon production code, and
-it contains no real customer data. Every document in it is synthetic.
+This is a personal project built to demonstrate a document-aware RAG
+chatbot, as a standalone portfolio project. It is not associated with
+any work experience, and it contains no real customer data. Every
+document in it is synthetic.
 The goal was to show the same shape of system in a form anyone can run
 locally: a FastAPI service that chunks support documents with
 LangChain, retrieves the relevant chunks from a FAISS vector store,
@@ -21,19 +22,17 @@ a wrong refund window, a wrong fee — and a customer will act on them.
 A RAG chatbot fixes that by grounding every answer in retrieved
 documents, but only if the retrieval is good: a wrong document means a
 confident wrong answer, and a system that only works when the cloud
-model is up does not survive an outage. The Verizon work had the same
-constraints at production scale: a large support knowledge base, a
-FAISS index, and GPT-4 answers that had to stay grounded in the
-retrieved chunks.
+model is up does not survive an outage. Production support systems face
+the same constraints at scale: a large support knowledge base, a FAISS
+index, and GPT-4 answers that have to stay grounded in the retrieved
+chunks.
 
 ## My role
 
-At Verizon I worked on the LangChain RAG pipelines and Azure OpenAI
-GPT-4 integration for customer support, with FAISS retrieval over the
-support documents. In this demo I rebuilt the pattern end to end: the
-document set, the LangChain chunking, the embedding and FAISS vector
-store, the reranking, the Azure OpenAI integration point, the local
-extractive fallback, the REST API, the chat UI, and the tests.
+I built this personal project end to end: the document set, the
+LangChain chunking, the embedding and FAISS vector store, the reranking,
+the Azure OpenAI integration point, the local extractive fallback, the
+REST API, the chat UI, and the tests.
 
 ## Architecture
 
@@ -156,9 +155,8 @@ came from the local extractive generator.
 - Chat UI at `http://localhost:8000/`: HTTP 200 in 0.030 s, 5,909
   bytes of static HTML, CSS, and JavaScript.
 
-No production metrics are claimed here. Any latency or scale results
-from the Verizon work are production results from that project and are
-not claims about this demo.
+No production metrics are claimed here. All numbers above describe this
+demo only.
 
 ## Challenges
 
